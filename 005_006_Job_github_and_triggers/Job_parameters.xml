@@ -1,0 +1,66 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>This job with parameters</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
+        <daysToKeep>-1</daysToKeep>
+        <numToKeep>5</numToKeep>
+        <artifactDaysToKeep>-1</artifactDaysToKeep>
+        <artifactNumToKeep>-1</artifactNumToKeep>
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.FileParameterDefinition>
+          <name>some-file.txt</name>
+          <description>Chose a file</description>
+        </hudson.model.FileParameterDefinition>
+        <hudson.model.ChoiceParameterDefinition>
+          <name>DNS_IP_ADDRESS</name>
+          <description>Chose public DNS</description>
+          <choices class="java.util.Arrays$ArrayList">
+            <a class="string-array">
+              <string>8.8.8.8</string>
+              <string>8.8.4.4</string>
+              <string>77.88.8.8 </string>
+              <string>77.88.8.1</string>
+              <string>8.8.4.5</string>
+            </a>
+          </choices>
+        </hudson.model.ChoiceParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>USERNAME</name>
+          <description>Enter username in system and get uid</description>
+          <defaultValue>jenkins</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <assignedNode>agent001||agent002</assignedNode>
+  <canRoam>false</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command># file parameter
+cat ./some-file.txt
+
+# chose parameter
+ping -c 1 $DNS_IP_ADDRESS
+
+# string parameter
+id -u $USERNAME</command>
+      <configuredLocalRules/>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>

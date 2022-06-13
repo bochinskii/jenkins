@@ -1,0 +1,134 @@
+--------------------------
+Использование Jenkins CLI
+-------------------------
+
+https://www.jenkins.io/doc/book/managing/cli/
+
+
+$ cd ./004*
+
+
+Чтобы пользоваться CLI нужно скачать склиент файл - jenkins-cli.jar.
+
+Его можно скачать с самого сервера - jenkins
+
+http[s]://<jenkins url>:<port>/cli/
+
+а именно, по вот такому url
+
+http[s]://<jenkins url>:<port>/jnlpJars/jenkins-cli.jar
+
+
+
+Вот как пользоваться
+
+java -jar jenkins-cli.jar [-s JENKINS_URL] -auth <username>:<password or token> command
+
+
+
+Например
+
+$ java -jar jenkins-cli.jar -s http://127.0.0.1:8081 -auth denisb:P@ssword12345 who-am-i
+Authenticated as: denisb
+Authorities:
+  authenticated
+
+
+
+
+Но лучше вместо логина и пароля использовать токены.
+
+Сгенерировать токен любой пользователь может ТОЛЬКО сам себе. На скриншотах 1 - 3
+в диреткории - screenshots показано как это делать.
+
+Вот пример использования CLI с токеном
+
+$ java -jar jenkins-cli.jar -s http://127.0.0.1:8081 -auth denisb:33b25552e0574e53511caacb65ecef7655 who-am-i
+Authenticated as: denisb
+Authorities:
+  authenticated
+
+
+
+
+Но использовать токен в комманде CLI не безопасно поэтому используют переменные окружения.
+
+$ export JENKINS_USER_ID=denisb
+$ export JENKINS_API_TOKEN=33b25552e0574e53511caacb65ecef7655
+
+$ java -jar jenkins-cli.jar -s http://127.0.0.1:8081 who-am-i
+Authenticated as: denisb
+Authorities:
+  authenticated
+
+----------------------------------------------------------------------
+Заметка:
+
+Для Windows нужно делать так
+
+$ $env:JENKINS_USER_ID="denisb"
+
+$ $env:JENKINS_API_TOKEN="33b25552e0574e53511caacb65ecef7655"
+
+-------------------------------------------------------------------
+
+
+
+
+---------------------------
+Сделаем что нибудь полезное
+---------------------------
+
+Давайте сделаем backup наших двух jobs'ов. Это полезно само по себе, а еще
+это важно, если вы хотите перенести jobs'ы на другой jenkins севрер.
+
+Экспортируем jobs'ы в xml формат
+
+$ java -jar jenkins-cli.jar -s http://127.0.0.1:8081 get-job Job_index_test > Job_index_test.xml
+
+$ java -jar jenkins-cli.jar -s http://127.0.0.1:8081 get-job Job_index_prod > Job_index_prod.xml
+
+$ ls -l
+total 3500
+-rw-rw-r-- 1 denisb denisb 3568879 июн 11 13:54 jenkins-cli.jar
+-rw-rw-r-- 1 denisb denisb    3613 июн 11 14:25 Job_index_prod.xml
+-rw-rw-r-- 1 denisb denisb    3615 июн 11 14:23 Job_index_test.xml
+
+Импортируем jobs'ы на jtnkins севрер
+
+$ java -jar jenkins-cli.jar -s http://127.0.0.1:8081 create-job Job_cli_index_test < Job_index_test.xml
+
+$ java -jar jenkins-cli.jar -s http://127.0.0.1:8081 create-job Job_cli_index_prod < Job_index_prod.xml
+
+-------------------------------------------------------------------------------------------------------------
+Заметка:
+
+Для Windows нужно выполнять данную комманды вот так
+
+$ get-content Job_index_test.xml | java -jar jenkins-cli.jar -s http://127.0.0.1:8081 create-job Job_cli_index_test
+
+$ get-content Job_index_prod.xml | java -jar jenkins-cli.jar -s http://127.0.0.1:8081 create-job Job_index_prod
+
+-----------------------------------------------------------------------------------------------------------
+
+Запустить jobs'ы можно так
+
+$ java -jar jenkins-cli.jar -s http://127.0.0.1:8081 build Job_cli_index_test -w
+Started Job_cli_index_test #2
+
+$ java -jar jenkins-cli.jar -s http://127.0.0.1:8081 build Job_cli_index_prod -w
+Started Job_cli_index_prod #2
+
+
+Результат можете посмотреть на скриншотах - 4 - 6. Все работает.
+
+-----------------------------------------------------------------------------
+Зметка:
+
+Для теста не забудьте запустить или создать заново инфраструктуру которую мы делали
+в главе - 002 (node-test и node-prod)
+
+----------------------------------------------------------------------------
+
+Все возможные комманды можно посмотреть вот тут - http[s]://<jenkins url>:<port>/cli/
+Но это наверное вы уже заметили.

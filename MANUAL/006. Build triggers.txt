@@ -1,0 +1,278 @@
+--------------
+Build Triggers
+--------------
+
+Build Triggers - это запуск jobs'ов не в ручную а по триггеру.
+
+Существует множество триггеров. Мы опишем несколько
+
+
+--------------------------------------------
+
+Заметка:
+
+Все скриншоты, которые относятся к данным настройкам находятся в директории -
+screenshots-triggers
+
+-----------------------------------------
+
+
+
+Trigger builds remotely (e.g., from scripts)
+
+Создается url по которому можно запускать job. Хорош для скриптов.
+
+В качестве примера, мы создали - Job_triggers_1_remotely (скриншот 1).
+
+Запускаем вот таким образом
+
+http[s]//<username>:<auth token>@<jenkins url>:<port>/job/<job name>/build?token=<job token>
+
+вот прмиер
+
+$ curl http://denisb:33b25552e0574e53511caacb65ecef7655@127.0.0.1:8081/job/Job_triggers_1_remotely/build?token=supertoken12345
+
+На скриншоте - 2 мы видим, как выполнился данный job удаленно.
+
+
+
+
+
+
+Build after other projects are built
+
+Запуск job'а после того как выполнится другой job
+
+В качестве примера, мы создали - Job_triggers_2_after_other (скриншот 3).
+Как вы видите, данный job запустится после того, как удачно отработает - Job_triggers_1_remotely
+
+Запустим
+
+$ curl http://denisb:33b25552e0574e53511caacb65ecef7655@127.0.0.1:8081/job/Job_triggers_1_remotely/build?token=supertoken12345
+
+На скриншоте - 4 мы видим, как выполнился данный job.
+
+
+
+
+
+
+Build periodically
+
+По факту это chron jobs'ы. Т.е. выполнение job'а по рассписанию.
+
+В качестве примера, мы создали - Job_triggers_3_periodically(скриншот 5).
+Как вы видите, данный job будет запускаться каждые 2-е минуты
+
+---------------------------------------------------------------------
+Заметка:
+
+В Cron'е мы делаем так - */2, а тут нужно делать - H/2
+
+--------------------------------------------------------------------
+
+На скриншоте - 6 мы видим, как выполнился данный job.
+
+
+
+
+
+Poll SCM
+
+Это самый интересный триггер.
+
+Периодически проверяет Git репозиторий. И если есть изменения с прошлого build'а,
+то запускает job снова.
+
+В качестве примера, мы создали - Job_test_application_trigger (скриншоты 7 - 8).
+На самом деле скопировали из Job_test_application и сделали изменения.
+
+Мы взяли наш проект с тестовый приложением, который мы делали ранее, но на сей
+раз мы не будем запускать job вручную. Он будет запускаться автоматически после того
+"заметит" изменения в репозитории
+
+Как вы видите, данный job будет проверять репозиторий каждые 2-е минуты.
+
+На скриншоте - 9 мы видим, как выполнился данный job. Теперь, когда мы сделаем
+commit в данный репозиторий (а именно в данный branch) в течении 2-ух минут jenkins
+должен будет это обнаружить и запустить даный job еще раз.
+
+$ curl 192.168.0.221
+<html>
+ <head>
+  <title>Test application v2</title>
+ </head>
+ <body>
+   <h1><p>Test application v2</p></h1>
+   <br>
+   <a href="info.php">PHP Info page</a>
+   <a href="page1.php">Application information</a>
+ </body>
+</html>
+
+
+
+Давайте изменим что нибудь в данном репозитории
+
+$ cp ./test_application_v3/* ./git_test_application
+
+$ cd git_test_application
+
+$ git status
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   index.php
+	modified:   page1.php
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+$ git add .
+
+$ git commit -m "Version 3"
+[main 00184e4] Version 3
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+$ git push origin main
+Enumerating objects: 7, done.
+Counting objects: 100% (7/7), done.
+Delta compression using up to 6 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (4/4), 385 bytes | 385.00 KiB/s, done.
+Total 4 (delta 2), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (2/2), completed with 2 local objects.
+To github.com:bochinskii/git_test_application.git
+   7698e0a..00184e4  main -> main
+
+
+Теперь в течении 2-х минут job должен будет выполниться - скриншот - 10
+
+$ curl 192.168.0.221
+<html>
+ <head>
+  <title>Test application v3</title>
+ </head>
+ <body>
+   <h1><p>Test application v3</p></h1>
+   <br>
+   <a href="info.php">PHP Info page</a>
+   <a href="page1.php">Application information</a>
+ </body>
+</html>
+
+
+Можите удалить web сервер
+
+$ vagrant destroy
+
+
+
+------------------------------------------------------
+Использование - GitHub hook trigger for GITScm polling
+------------------------------------------------------
+
+Для использования этого задания нам понадобится вот этот плагин
+
+https://plugins.jenkins.io/github/
+
+В новых версиях jenkins он встроен.
+
+
+
+
+Мы возьмем наш проект с тестовый приложением, который мы делали ранее.
+На сей раз он будет запускаться автоматически после того как пройдет commit.
+
+------------------------------------------------------------------------------------
+Заметка:
+
+Вот и отличие между триггером - Poll SCM. Напомним, что он периодически проверяет
+GitHub репозиторий на новые commits и уже потом запускает job.
+
+---------------------------------------------------------------------------
+
+
+Тут есть некоторые нюансы. Чтобы работать с эти триггером, нужно чтобы ваш jenkins
+сервер был доступен из сети интернет.
+
+Мы сделали 2-а ec2 instances'а для этих целей. Один - это jenkins севрер, а
+второй - web сервер с установленным стэком LAMP.
+
+
+В качестве примера, мы создали - Job_test_application_trigger_v2 (скриншоты 1 - 5).
+
+Там мало отличий от job'а - Job_test_application_trigger.
+Разница в том, что мы указали - GitHub project и в качестве build trigger'а указали -
+"GitHub hook trigger for GITScm polling"
+
+
+Добавляется еще один шаг - настройка репозитория в GitHub'е (скриншоты 6 - 7).
+
+Если коротко, то мы добавили webhook. Указали там
+
+http[s]://<jenkins url>:<port>/github-webhook/
+
+Это означает, что при каком-то событии (в нашем случае - push), GitHub посылвает json
+запрос на наш jenkins сервер. Наш сервер увидит этот запрос, в котором будет url репозитория -
+git@github.com:bochinskii/git_test_application.git, и "поймет", что нужно
+запустить job в который настроен на данный репозиторий.
+
+Все, настроили. Теперь нужно сделать commit и push чтобы наш job выполнился.
+
+Созаддим 4-ю версию нашего приложения.
+
+$ cd ..
+
+$ cp ./test_application_v4/* ./git_test_application
+
+$ cd git_test_application/
+
+$ git add .
+
+$ git commit -m "Version 4"
+[main d7c17c9] Version 4
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+$ git push origin main
+Enumerating objects: 7, done.
+Counting objects: 100% (7/7), done.
+Delta compression using up to 6 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (4/4), 389 bytes | 389.00 KiB/s, done.
+Total 4 (delta 2), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (2/2), completed with 2 local objects.
+To github.com:bochinskii/git_test_application.git
+   9a6cb51..d7c17c9  main -> main
+
+
+Наш job выполнился - скриншот - 8
+
+Проверяем
+
+$ curl http://3.73.36.198
+<html>
+ <head>
+  <title>Test application v4</title>
+ </head>
+ <body>
+   <h1><p>Test application v4</p></h1>
+   <br>
+   <a href="info.php">PHP Info page</a>
+   <a href="page1.php">Application information</a>
+ </body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+-------------------------------------------

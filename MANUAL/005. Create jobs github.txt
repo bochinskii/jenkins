@@ -1,0 +1,240 @@
+-------------------------
+Создание jobs'а из GitHub
+-------------------------
+
+Для работы с GitHub нам нужен будет вот этот плагин.
+
+https://plugins.jenkins.io/git/
+
+В новых версиях jenkins он уже установлен.
+
+
+Какова суть? У нас есть приложение, которое будет выкладываться на GitHub.
+С помощью jenkins'а мы будем симмулировать сборку данного приложения, тестирование
+и deploy на web сервер.
+
+
+
+Опять же будем пользоваться vagrant'ом для создания LAMP севрера (хотя нам было
+бы достаточно apache и php).
+
+$ cd ./005*
+
+$ vagrant up
+
+--------------------------------------------
+
+Заметка:
+
+Все скриншоты, которые относятся к данным настройкам находятся в директории -
+screenshots
+
+-----------------------------------------
+
+Настраиваем GitHub.
+
+Создайте аккаунт на GitHub, если он не создан.
+
+Настраиваем GitHub на работу по ssh ключам. Если хотите, то можете настроить
+на работу с токеном вместо ssh.
+
+Создайте репозиторий на GitHub. В нашем случае - git_test_application
+
+Клонируем пустой репозиторий в директорию с проектом
+
+$ git clone git@github.com:bochinskii/git_test_application.git
+Cloning into 'git_test_application'...
+warning: You appear to have cloned an empty repository.
+
+
+
+Скопируем 1-ую версию нашего тестового приложения в GitHub.
+
+$ cp ./test_application_v1/* ./git_test_application
+
+$ cd ./git_test_application
+
+$ git remote -v
+origin	git@github.com:bochinskii/git_test_application.git (fetch)
+origin	git@github.com:bochinskii/git_test_application.git (push)
+
+$ git status
+On branch main
+
+No commits yet
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	index.php
+	info.php
+	page1.php
+
+nothing added to commit but untracked files present (use "git add" to track)
+
+$ git add .
+
+$ git commit -m "Version 1"
+[main (root-commit) e39cc21] Version 1
+ 3 files changed, 20 insertions(+)
+ create mode 100644 index.php
+ create mode 100644 info.php
+ create mode 100644 page1.php
+
+$ git push origin main
+Enumerating objects: 5, done.
+Counting objects: 100% (5/5), done.
+Delta compression using up to 6 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (5/5), 558 bytes | 279.00 KiB/s, done.
+Total 5 (delta 0), reused 0 (delta 0), pack-reused 0
+To github.com:bochinskii/git_test_application.git
+ * [new branch]      main -> main
+
+Можете проверять репозиторий на GitHub. Файлы тестового прилождения 1-ой версии
+должны быть там.
+
+
+
+
+Теперь, нам нужно убдет настроить jenkins на работу с GitHub по ssh ключам.
+Вы можете использовать тот ключ, с помощью которого вы работате с GtHub, но лучше всего
+для jenkins'а создать свой.
+
+$ cd ..
+
+$ ./keys/jenkins
+
+$ ssh-keygen -t rsa -b 4096 -C "jenkins" -f ./keys/jenkins
+Generating public/private rsa key pair.
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
+Your identification has been saved in ./keys/jenkins
+Your public key has been saved in ./keys/jenkins.pub
+The key fingerprint is:
+SHA256:NkXW1+RgvB9GDUhqDj5dUSwxPdBjzxLvk0uvgfEsjq0 jenkins
+The key's randomart image is:
++---[RSA 4096]----+
+|          oo*X=+o|
+|         o .++@+o|
+|        . + .+.O.|
+|       . * .  oo+|
+|        S o . .+o|
+|       . o   = +o|
+|            o = +|
+|           + . o.|
+|          E.o .. |
++----[SHA256]-----+
+
+
+Далее, берем публичный ключ и указываем его в настройках профиля GitHub (скриншоты github-1 - github-2).
+
+После этого создаем credentials в jenkins'е, как мы это делали в прошлый раз
+(скриншоты 1 - 2).
+
+Тут стоит отметить, что в качетве username нужно вписать username профиля на GitHub.
+
+
+Далее создаем job - Job_test_application (скриншоты 3 - 8).
+
+Тут происходит клонирование репозитория (Source Code Management).
+Далее мы симулировали как-будто сборку нашего приложения (код из файла build-build).
+
+Потом симулирвали тестирования нашего приложения (код из файла build-test). Данный скрипт
+перечисляет все тестовые файлы и записывает их количество. Потом идет проверка -
+если количество файлов - 3, то тест пройден.
+
+Так же обратите внимание, что мы указали запускать этот job на агентах (agent001 или agent002),
+которые мы настроили ранее. Не забудьте установить на агенты git. Если вы используете docker,
+то вы можете пересобрать контейнеры - agent-001 - agent-002 или зайти на них
+и установить git. На контейнер мастер - jenkins, не нужно дополнительно
+устанавливать git т.к. он устанавливается с плагином.
+
+Да, и мы заведомо добавили на web сервер как мы это делали ранее для плагина - Publish over SSH
+
+-----------------------------------------------------------
+Заметка:
+
+Установить Git
+
+https://git-scm.com/download/linux
+
+------------------------------------------------------------
+
+Тестируем
+
+$ curl 192.168.0.221
+<html>
+ <head>
+  <title>Test application v1</title>
+ </head>
+ <body>
+   <h1><p>Test application v1</p></h1>
+   <br>
+   <a href="info.php">PHP Info page</a>
+   <a href="page1.php">Application information</a>
+ </body>
+</html>
+
+Так же можете зайти с браузера и убедится что все работает
+
+
+
+
+
+Теперь, давайте обновим наше приложение.
+
+$ cp ./test_application_v2/* ./git_test_application
+
+$ git status
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   index.php
+	modified:   page1.php
+
+no changes added to commit (use "git add" and/or "git commit -a")
+
+$ git add .
+
+$ git commit -m "Version 2"
+[main 7698e0a] Version 2
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+$ git push origin main
+Enumerating objects: 7, done.
+Counting objects: 100% (7/7), done.
+Delta compression using up to 6 threads
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (4/4), 386 bytes | 386.00 KiB/s, done.
+Total 4 (delta 2), reused 0 (delta 0), pack-reused 0
+remote: Resolving deltas: 100% (2/2), completed with 2 local objects.
+To github.com:bochinskii/git_test_application.git
+   e39cc21..7698e0a  main -> main
+
+
+
+
+Теперь, мы можем снова запустить Job_test_application
+
+
+
+
+Проверяем
+
+$ curl 192.168.0.221
+<html>
+ <head>
+  <title>Test application v2</title>
+ </head>
+ <body>
+   <h1><p>Test application v2</p></h1>
+   <br>
+   <a href="info.php">PHP Info page</a>
+   <a href="page1.php">Application information</a>
+ </body>
+</html>
+
+Вот так. Приложение обновлено до 2-ой версии

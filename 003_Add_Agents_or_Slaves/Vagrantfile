@@ -1,0 +1,56 @@
+PREFIX="slave"
+GATEWAY="192.168.0.1"
+NETMASK="255.255.255.0"
+SERVERS=[
+  {
+    :HOSTNAME => PREFIX + "-001",
+    :IP => "192.168.0.211",
+    :CPU => "6",
+    :RAM => "2048"
+  },
+  {
+    :HOSTNAME => PREFIX + "-002",
+    :IP => "192.168.0.212",
+    :CPU => "6",
+    :RAM => "2048"
+  }
+]
+
+Vagrant.configure(2) do |config|
+
+  SERVERS.each do |machine|
+
+    config.vm.synced_folder ".", "/vagrant", disabled: true
+
+    config.vm.define machine[:HOSTNAME] do |node|
+
+        node.vm.box = "ubuntu/jammy64"
+        node.vm.hostname = machine[:HOSTNAME]
+        node.vm.network "public_network", bridge: "wlp3s0",
+          ip: machine[:IP],
+          netmask: NETMASK,
+          gateway: GATEWAY
+
+        node.vm.provider "virtualbox" do |vb|
+            vb.memory = machine[:RAM]
+            vb.cpus = machine[:CPU]
+            vb.name = machine[:HOSTNAME]
+        end # END of provider
+
+        node.vm.provision "shell", inline: <<-SHELL
+          sudo ip route del default via 10.0.2.2
+          sudo apt-get update
+          # Install java
+          echo "#### Java ##"
+          sudo apt-get install openjdk-11-jre -y
+          java -version
+          # Prepere for jenkins
+          sudo mkdir /home/vagrant/jenkins
+          sudo chown vagrant: /home/vagrant/jenkins
+        SHELL
+
+    end # END of define
+
+  end # END of SERVERS
+
+end

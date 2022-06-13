@@ -1,0 +1,71 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>Deploy code from github to aws beanstalk</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
+        <daysToKeep>-1</daysToKeep>
+        <numToKeep>5</numToKeep>
+        <artifactDaysToKeep>-1</artifactDaysToKeep>
+        <artifactNumToKeep>-1</artifactNumToKeep>
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
+    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.34.3">
+      <projectUrl>git@github.com:bochinskii/git_test_application.git/</projectUrl>
+      <displayName></displayName>
+    </com.coravy.hudson.plugins.github.GithubProjectProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@4.11.3">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>git@github.com:bochinskii/git_test_application.git</url>
+        <credentialsId>github</credentialsId>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>*/main</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="empty-list"/>
+    <extensions/>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers>
+    <com.cloudbees.jenkins.GitHubPushTrigger plugin="github@1.34.3">
+      <spec></spec>
+    </com.cloudbees.jenkins.GitHubPushTrigger>
+  </triggers>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBDeploymentBuilder plugin="awseb-deployment-plugin@0.3.21">
+      <config>
+        <credentialId>aws_id</credentialId>
+        <awsRegion>eu-central-1</awsRegion>
+        <applicationName>test-application</applicationName>
+        <environmentName>Testapplication-env-1</environmentName>
+        <bucketName></bucketName>
+        <keyPrefix></keyPrefix>
+        <versionLabelFormat>Version-${BUILD_ID}</versionLabelFormat>
+        <versionDescriptionFormat></versionDescriptionFormat>
+        <rootObject>.</rootObject>
+        <includes></includes>
+        <excludes></excludes>
+        <zeroDowntime>false</zeroDowntime>
+        <sleepTime>90</sleepTime>
+        <checkHealth>true</checkHealth>
+        <maxAttempts>30</maxAttempts>
+        <skipEnvironmentUpdates>false</skipEnvironmentUpdates>
+      </config>
+    </br.com.ingenieux.jenkins.plugins.awsebdeployment.AWSEBDeploymentBuilder>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>

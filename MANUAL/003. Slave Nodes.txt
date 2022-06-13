@@ -1,0 +1,150 @@
+------------
+Slaves Nodes
+------------
+
+Slaves Nodes нужны для масштабирования ресурсов jenkins сервера.
+
+Так же они будут полезны для разделения builds'ов разных платформ.
+Т.е. вы можете выделить разные slave nod'ы для builds'ов на .NET или PHP.
+
+Можно например, создать отдельные ноды которые используют ansible или terraform.
+Т.е. salve node'а может быть сконфигурирована как ansible и build выполняется с помощью
+playbooks'ов или может сконфигруирована для использования terraform и выполнять builds'ы
+с помощью него.
+
+$ cd ./003_Add_Agents_or_Slaves
+
+
+----------------------------------------------------------------
+Добавление slave nodes если вы используете docker инфраструктуру
+----------------------------------------------------------------
+
+
+Для того, чтобы добавить slaves nodes нам понадобится
+
+https://plugins.jenkins.io/ssh-slaves/
+
+но в последних версиях jenkins он уже предустановлен
+
+
+
+Вот можно почитать документацию
+
+https://www.jenkins.io/doc/book/using/using-agents/
+
+
+
+Вот оффициальный образ
+
+https://hub.docker.com/r/jenkins/ssh-agent
+
+Нам понадобиться сгенерировать ssh ключ с помощью которого jenkins будет подсоединяться
+к агентам.
+
+$ mkdir ./keys
+
+$ ssh-keygen -f ./keys/jenkins_agent_key
+
+Поднимаем агентов (slave nodes). Например, мы поднимем 2-штуки
+
+$ docker run --name agent-001 --network jenkins \
+-e JENKINS_AGENT_SSH_PUBKEY="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCddRXQE0r94CEjEeskSUm61eFXl1vH2Sop4HpqR3A7NCVLif5Crn7tZtljScgpLJuRo3j/hx97snC1emwFiyoHv1eHkrN1r/YOOmPFvNYbnA21Uru4rfLy3oPhbRvZL1nqp0fD3Tu5QvG45Ui/5aFJ6WSC7khaDEoze2XSkN79lcBfZ3J/DLGmdYCiFJO5r8nIDm9bz2/pJ69bfRpp+jcVeVj3W9C5gD+NK5bGFL1UwvFhCtYW5jKVy5IooTxz4hyTBZjo2RZiX2VVTK0XWOn3Ph03naattYQwrrNDy9fur+7Qhv4OHjXa79XEmzy2x9IKER2CznGQHUd3aK7pCCydwKxkXUZ3Ln7lUIpXLbXmxMF17itEVxwqxENHtSwSVpqySc350Wtz26VEFx6pI32kVMUxjzfVI3DzOWk5izxyXN2UoKS66dy2X9DdhKEfQ4jcu9x5mSoLF3bhBGPDhececdLrflxTBDt9TlmRfYBTvUD0+Bm/FxZ9G2C9Y9J0yJs= denisb@denisb-ws" -d jenkins/ssh-agent
+
+$ docker run --name agent-002 --network jenkins \
+-e JENKINS_AGENT_SSH_PUBKEY="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCddRXQE0r94CEjEeskSUm61eFXl1vH2Sop4HpqR3A7NCVLif5Crn7tZtljScgpLJuRo3j/hx97snC1emwFiyoHv1eHkrN1r/YOOmPFvNYbnA21Uru4rfLy3oPhbRvZL1nqp0fD3Tu5QvG45Ui/5aFJ6WSC7khaDEoze2XSkN79lcBfZ3J/DLGmdYCiFJO5r8nIDm9bz2/pJ69bfRpp+jcVeVj3W9C5gD+NK5bGFL1UwvFhCtYW5jKVy5IooTxz4hyTBZjo2RZiX2VVTK0XWOn3Ph03naattYQwrrNDy9fur+7Qhv4OHjXa79XEmzy2x9IKER2CznGQHUd3aK7pCCydwKxkXUZ3Ln7lUIpXLbXmxMF17itEVxwqxENHtSwSVpqySc350Wtz26VEFx6pI32kVMUxjzfVI3DzOWk5izxyXN2UoKS66dy2X9DdhKEfQ4jcu9x5mSoLF3bhBGPDhececdLrflxTBDt9TlmRfYBTvUD0+Bm/FxZ9G2C9Y9J0yJs= denisb@denisb-ws" -d jenkins/ssh-agent
+
+Как вы заметили в переменной окружения - JENKINS_AGENT_SSH_PUBKEY нужно указать
+публичный ключ - jenkins_agent_key.pub. При запуске агента он добавиться в known_hosts
+
+
+Опять же, если не хотите, чтобы контейнеры автоматически запускались после запуска хотовой машины
+
+$ docker container update --restart=unless-stopped agent-001
+
+$ docker container update --restart=unless-stopped agent-002
+
+Далее, мы все делаем как на скриншотах - ./screenshots-docker
+
+
+
+Сперва создаем credentials (скриншоты 1 - 2), в который помещаем приватный ключ - jenkins_agent_key.
+
+Обязательно укажите id и descriptions т.к. они помогут ориентирвоаться в credentials'ах,
+когда их будет много.
+
+В качестве - username нужно указать jenkins т.к. контейнеры агенты запускаются под этим
+пользователем.
+
+
+
+
+Далее создаем ноды (скриншоты 3 - 7). Тут нужно не забыть указать ранее созданные
+- credentials. И надо обязательно указать - labels т.к. мы по ним будем обращаться
+из jobs'ов.
+
+Так же важный момент выстаивть - Host Key Verification Strategy в значение -
+manually trusted key Verification Strategy. Это чтобы fingerprint парвильно отрабатывал.
+
+
+
+
+Теперь настраиваем jobs'ы (скриншоты 8 - 9) таким образом, чтобы они обращались к тем агентам к
+которым вам интересует. Например, мы указали выполнение Job_index_test агенту - agent-001,
+а job'у - Job_index_prod указали выполняться на агенте - agent-002.
+
+На скриншотах 10 - 11 вы можете удоставериться что данные jobs'ы выполяются на тех агентах,
+на которых вы указали.
+
+-----------------------------------------------------------------------------
+Зметка:
+
+Для теста не забудьте запустить или создать заново инфраструктуру которую мы делали
+в прошлой главе (node-test и node-prod)
+
+----------------------------------------------------------------------------
+
+------------------------------------
+Добавление slave nodes общий случай
+------------------------------------
+
+Для того, чтобы добавить slaves nodes нам понадобяться несколько плагинов
+
+https://plugins.jenkins.io/ssh-slaves/
+
+https://plugins.jenkins.io/ssh-agent/
+
+Первый из них идет предустановлен в новых версиях jenkins.
+
+Для общего случая опять же можно использовать vagrant. Мы созадали два сервера,
+которые буду тыступать в качестве slaves nodes. Обратите внимание, что на них
+установлены только java, сам jenkins мы НЕ устанавливали. Так надо :).
+
+Поднимем наши сервера
+
+$ vagrant up
+
+
+Далее, мы все делаем как на скриншотах - ./screenshots-general
+
+
+Первым делом создаем credentials (скриншоты 1 - 3 ). Вы могли заметить, что
+мы создали 2  credentials'а. Это потому что vagrant генерирует ключи для каждой
+ноды. В реальности конечно же если вы используете один ключ для нескольких серверов,
+то credentials нужен только один.
+
+
+
+Длее создаем slaves nodes как мы это делали ранее (скриншоты 4 - 8).
+
+
+
+Еу и для теста, мы взяли Job_echo и настроили его на выполенение на slave-001
+(скриншоты 9 - 10).
+
+-----------------------------------------------------------------------------
+Зметка:
+
+Для теста не забудьте запустить или создать заново инфраструктуру которую мы делали
+в прошлой главе (node-test и node-prod)
+
+----------------------------------------------------------------------------

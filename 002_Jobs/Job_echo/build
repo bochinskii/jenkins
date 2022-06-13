@@ -1,0 +1,7 @@
+echo "This is my first job"
+sleep 5s
+ID=`id --user -n`
+echo "my name is - $ID"
+sleep 5s
+echo "My place is:"
+pwd

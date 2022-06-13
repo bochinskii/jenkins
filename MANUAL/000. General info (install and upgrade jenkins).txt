@@ -1,0 +1,217 @@
+-------------------
+Общие понятия CI/CD
+-------------------
+
+CI (continuous integration)
+DevOps модель, в которой разработчики делают - commit кода в репозиторий и автоматически
+запускается компиляция (build) этого кода. После этого происходит запуск тестов кода.
+
+Тесты бывают:
+- Unit Test;
+- Integration test;
+- Functionality test
+
+CD (continuous deployment)
+DevOps модель, в которой разработчики делают - commit кода в репозиторий и автоматически
+запускается компиляция (build) этого кода. После этого происходит запуск тестов кода
+и скомпелированный код (artifact) делает - deploy в Staging и Production.
+
+Если коротко:
+
+CI
+
+commit -> build/compile -> test
+
+
+CD
+
+commit -> build/compile -> test -> deploy
+
+
+
+-----------------
+Установка Jenkins
+-----------------
+
+Можно установить - LTS или Weekly версию.
+
+
+Вариант на docker
+
+https://hub.docker.com/r/jenkins/jenkins
+
+https://github.com/jenkinsci/docker/blob/master/README.md
+
+Это может понадобиться, когда мы будем рассматривать Slaves/Nodes
+
+$ docker network create jenkins --driver bridge
+
+Если коротко, то вот как можно запустить LTS версию
+
+$ docker run --name jenkins --network jenkins --user jenkins -d \
+-v jenkins_home:/var/jenkins_home \
+-p 8081:8080 -p 50000:50000 --restart=on-failure:3 jenkins/jenkins:lts-jdk11
+
+
+Если не хотите, чтобы контейнер автоматически запускался после запуска хотовой машины
+
+$ docker container update --restart=unless-stopped jenkins
+
+Пароль инициализации
+
+$ docker container exec -it jenkins cat /var/jenkins_home/secrets/initialAdminPassword
+
+----------------------------------------------------------------------------------------
+Дополнение:
+
+$ cd 000_*
+
+
+$ openssl ecparam -name prime256v1 -genkey -noout -out ./keys/jenkins.pem.key
+
+$ openssl req -new -key ./keys/jenkins.pem.key -out ./keys/jenkins.pem.csr -SHA256
+
+$ openssl x509 -signkey ./keys/jenkins.pem.key -in ./keys/jenkins.pem.csr -req -days 365 -out ./keys/jenkins.pem.crt -SHA256
+
+$ docker build -t bochinskii/jenkins:lts-jdk11-https .
+
+Sending build context to Docker daemon  6.144kB
+Step 1/5 : FROM jenkins/jenkins:lts-jdk11
+ ---> cb535f2a7054
+Step 2/5 : COPY --chown=jenkins:jenkins ./keys/jenkins.pem.crt /var/lib/jenkins/cert
+ ---> dc68a4fadc43
+Step 3/5 : COPY --chown=jenkins:jenkins ./keys/jenkins.pem.key /var/lib/jenkins/pk
+ ---> 73bff9529de6
+Step 4/5 : ENV JENKINS_OPTS --httpPort=-1 --httpsPort=8083 --httpsCertificate=/var/lib/jenkins/cert --httpsPrivateKey=/var/lib/jenkins/pk
+ ---> Running in 2821735f50db
+Removing intermediate container 2821735f50db
+ ---> ebe9e6ff67f3
+Step 5/5 : EXPOSE 8083
+ ---> Running in 454db356b2dd
+Removing intermediate container 454db356b2dd
+ ---> 71370dd8b797
+Successfully built 71370dd8b797
+Successfully tagged jenkins:lts-jdk11-https
+
+
+$ docker run --name jenkins --user jenkins -d \
+-v jenkins_home:/var/jenkins_home \
+-p 8083:8083 -p 50000:50000 bochinskii/jenkins:lts-jdk11-https
+
+-----------------------------------------------------------------------------------------
+
+Вариант на хостовую машину
+
+https://www.jenkins.io/doc/book/installing/linux/
+
+Если коротко, то нужно установить java т.к. jenkins написан на ней и установить
+сам jenkins. Так же важно помнить, что он запускается как сервис на порту 8080.
+
+Лучше установить LTS версию.
+
+
+------------------
+Обновление jenkins
+------------------
+
+С докером тут все понятно.
+Просто запускаете новый контейнер с новым image'ом при этом и монтируете
+volume - jenkins_home к новому контейнеру
+
+
+Обновление на хостовой машине выглядит вот так.
+
+1-й вариант
+
+Обновить jenkins можно используя менеджер, типа
+
+$ apt-get update
+
+$ apt-get upgrade
+
+
+
+2-й вариант
+
+Но, если вы вдруг вы использовали для установки jenkins'а  war файл а не настройку
+репозитория
+
+https://www.jenkins.io/doc/book/installing/war-file/
+
+то обновиться можно сделать вот так:
+
+Нужно скачать war файл и положить его в директорию - "executable-war"
+
+Найти эту директорию можно:
+
+http[s]://<jenkins url>:<port>/systemInfo
+
+В нашем случае executable-war директория находится - /usr/share/jenkins
+
+$ jenkins --version
+2.332.3
+
+$ cd /usr/share/jenkins
+
+На всякий случай, сохраним предыдущую версию
+
+$ sudo mv jenkins.war jenkins.war.2.332.3
+
+Скачаем новую версию
+
+$ curl -Lo ./jenkins.war https://get.jenkins.io/war/2.354/jenkins.war
+
+
+Перезагрузить сервис
+
+$ sudo systemctl restart jenkins
+
+или
+
+http[s]://<jenkins url>:<port>/restart
+
+$ jenkins --version
+2.354
+
+
+
+
+
+Если вам ннужно откатиться обратно. Действия теже
+
+$ cd /usr/share/jenkins
+
+$ sudo mv jenkins.war jenkins.war.2.354
+
+$ sudo mv jenkins.war.2.332.3 jenkins.war
+
+$ sudo systemctl restart jenkins
+
+или
+
+http[s]://<jenkins url>:<port>/restart
+
+$ jenkins --version
+2.332.3
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-------------------------------------------------
