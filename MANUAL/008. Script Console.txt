@@ -1,0 +1,108 @@
+---------------
+Script Console
+---------------
+
+https://www.jenkins.io/doc/book/managing/script-console/
+
+
+https://www.groovy-lang.org/documentation.html
+
+
+
+
+Работа с файлами
+
+
+% "ls -l".execute().text
+
+...
+
+% "cat /etc/passwd".execute().text
+
+...
+
+или
+
+% new File('/etc/passwd').text
+
+...
+
+С помощью данной комманды можно посмотреть все credentials
+
+% new File("${Jenkins.instance.root}/credentials.xml").text
+
+...
+
+
+
+
+
+Посмотреть все функции, которые можно использовать при управлении jenkins'ом
+
+% Jenkins.instance.metaClass.methods*.name
+
+...
+
+Вот так можно посмотреть количество executors
+
+% Jenkins.instance.getNumExecutors()
+
+2
+
+а вот так изменить их количество
+
+% Jenkins.instance.setNumExecutors(5)
+
+
+
+
+
+Работа с jobs'ами
+
+
+Вывести все builds'ы определенного job'а
+
+% selected_job = Jenkins.instance.getItemByFullName("Job_test_application_trigger")
+% selected_job.getBuilds()
+
+Result: [Job_test_application_trigger #8, Job_test_application_trigger #7, Job_test_application_trigger #6, Job_test_application_trigger #5, Job_test_application_trigger #4]
+
+
+Красиво вывести все builds'ы определенного jobs
+
+% selected_job = Jenkins.instance.getItemByFullName("Job_test_application_trigger")
+% selected_job.getBuilds().each {
+  println("Build " + it + " Results " + it.result)
+}
+
+Build Job_test_application_trigger #8 Results SUCCESS
+Build Job_test_application_trigger #7 Results SUCCESS
+Build Job_test_application_trigger #6 Results SUCCESS
+Build Job_test_application_trigger #5 Results SUCCESS
+Build Job_test_application_trigger #4 Results SUCCESS
+
+тут - it - имя с индексом, it.result - результат выполненого job'а
+
+
+
+Удалить все builds'ы определенного job'а с обнулением счетчиков
+
+% selected_job = Jenkins.instance.getItemByFullName("Job_test_application_trigger")
+% selected_job.builds.each() { build ->
+  build.delete()
+}
+% selected_job.updateNextBuildNumber(1)
+
+
+Вот эта строка - selected_job.updateNextBuildNumber(1), говорит о тром, что если
+мы будем запускать данный job, то он будет начинаться с номера - 1 (по сути обнуляем счетчики)
+
+
+Удалить builds'ы, которые закончились не успешно.
+
+selected_job = Jenkins.instance.getItemByFullName("Job_parameters")
+selected_job.getBuilds().each {
+  if(it.result == Result.FAILURE) {
+    it.delete()
+  }
+}
