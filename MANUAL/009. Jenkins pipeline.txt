@@ -1,0 +1,58 @@
+-----------------------
+Основы Jenkins Pipeline
+-----------------------
+
+https://www.jenkins.io/doc/book/pipeline/
+
+https://www.jenkins.io/doc/book/pipeline/syntax/
+
+https://www.jenkins.io/doc/pipeline/steps/workflow-basic-steps/
+
+Если коротко, то Jenkins pipeline - это создание jobos'ов в виде кода.
+
+Для того, чтобы использовать Pipeline нужно установить плагин -
+https://plugins.jenkins.io/workflow-aggregator/
+
+В новых версиях jenkins он предустановлен.
+
+
+Код можно писать в самом job'е, а можно в Jenkinsfile'е.
+
+Используют Dcriptes Syntax или новый улучшенный Declarative Syntax (DSL).
+
+Мы будем показывать примеры на DSL.
+
+
+
+На скриншотах 1 - 4 показано как мы создали job - Job_Pipeline_1 для использования pipeline.
+
+Код соответствует файлу - Jenkinsfile_1
+
+Там все предельно ясно, так что описываьт не будем.
+
+
+
+На скриншотах 5 - 6 показано как мы создали job - Job_Pipeline_2_docker для использования
+pipeline с docker'ом.
+
+Суть такова. У нас есть код, который нужно собрать некими инструментами. Мы заранее
+делаем docker образ с этими инструментами. Указываем этот обрас в job'е и производим
+все необхоимые действия.
+
+Для этого нам понадобяится плагины
+
+https://plugins.jenkins.io/docker-plugin/
+
+https://plugins.jenkins.io/docker-workflow/
+
+Ну, и надо не забыть пользователя от которого запускается jenkis занести в группу
+- docker, чтобы jenkins смог запускать контейнеры
+
+$ sudo usermod -aG docker jenkins
+
+
+
+Как правило не пишут код в job'е, а указывают путь к Jenkinsfile'у. На скриншоте - 7
+показан пример.
+
+-------------------------------

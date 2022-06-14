@@ -1,0 +1,40 @@
+pipeline {
+    agent {
+        label 'agent001 || agent002'
+    }
+    options {
+        skipStagesAfterUnstable()
+    }
+    environment {
+        OWNER = "Denis Bochinskii"
+    }
+    stages {
+        stage('Build') {
+            steps {
+                echo "Build Application"
+                echo "Hello - ${OWNER} on build staging"
+                // sh "sleep 10s"
+                sleep(time:10,unit:"SECONDS")
+                sh '''
+                  id -un
+                  uname -r
+                  date +%Y-%m-%d
+                '''
+            }
+        }
+        stage('Test'){
+            steps {
+                echo "Test Application"
+                echo "Hello - ${OWNER} on test staging"
+                sleep(time:10,unit:"SECONDS")
+            }
+        }
+        stage('Deploy') {
+            steps {
+                echo "Deploy Application"
+                echo "Hello - ${OWNER} on deploy staging"
+                sleep(time:10,unit:"SECONDS")
+            }
+        }
+    }
+}
