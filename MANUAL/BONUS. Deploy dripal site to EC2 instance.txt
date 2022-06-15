@@ -8,7 +8,13 @@
 
 Нужно сделать CI/CD сайта.
 
-Архив сайта и базы данных находится на GitHub'е.
+Архив сайта и базы данных находится на GitHub'е - git@github.com:bochinskii/rocinante-update.git
+Так же там находятся Jenkinsfile'ы.
+
+Нужно использовать только один файл. Все Jenkinsfile'ы делают одно и тоже.
+Разница состоит в том, что в Jenkinsfile_v1 - мы используем ssh комманды из shell'а,
+а в Jenkinsfile_v2 - используем плагин - SSH Pipeline Steps - https://plugins.jenkins.io/ssh-steps/
+
 
 Мы сделаем Pipeline job, который будет клонировать репозиторий с сайтои и с
 Jenkinsfile'ом. Далее, данный job будет запускать pipeline код для развертывания сайта
@@ -25,11 +31,5 @@ Jenkinsfile'ом. Далее, данный job будет запускать pip
 Создали job - скриншоты - 3 - 4.
 
 В данном скриншоте мы указываем Jenkinsfile в котором описывается pipeline код.
-
-В нашем случае у нас есть 2-а Jenkinsfile'а. Все Jenkinsfile'ы делают одно и тоже.
-Разница состоит в том, что в Jenkinsfile_v1 - мы используем ssh комманды из shell'а,
-а в Jenkinsfile_v2 - используем плагин - SSH Pipeline Steps - https://plugins.jenkins.io/ssh-steps/
-
-Можете протестировать люой из них
 
 На скриншоте - 5 показан результат работы.
