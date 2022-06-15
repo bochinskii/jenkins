@@ -1,0 +1,183 @@
+----------------
+Настройка HTTPS
+---------------
+
+Вот так можно посмотреть все конфигурационные файлы пакета jenkins
+
+$ sudo dpkg -L jenkins
+/.
+/etc
+/etc/default
+/etc/default/jenkins
+/etc/init.d
+/etc/init.d/jenkins
+/etc/logrotate.d
+/etc/logrotate.d/jenkins
+/lib
+/lib/systemd
+/lib/systemd/system
+/lib/systemd/system/jenkins.service
+/usr
+/usr/bin
+/usr/bin/jenkins
+/usr/share
+/usr/share/doc
+/usr/share/doc/jenkins
+/usr/share/doc/jenkins/changelog.gz
+/usr/share/doc/jenkins/copyright
+/usr/share/java
+/usr/share/java/jenkins.war
+/usr/share/jenkins
+/usr/share/jenkins/migrate
+/var
+/var/cache
+/var/cache/jenkins
+/var/lib
+/var/lib/jenkins
+/var/log
+/var/log/jenkins
+
+Настроим jenkins на прослушивание, только localhost'а
+
+https://www.jenkins.io/doc/book/system-administration/systemd-services/
+
+Как правило настройки находятся вот тут - /etc/default/jenkins, но т.к. используется systemd,
+то настраивать нужно сам сервис
+
+$ sudo systemctl edit jenkins.service
+
+[Service]
+
+Environment="JENKINS_LISTEN_ADDRESS=127.0.0.1"
+
+или
+
+$ sudo mkdir /etc/systemd/system/jenkins.service.d
+
+$ sudo nano /etc/systemd/system/jenkins.service.d/override.conf
+
+
+
+$ sudo systemctl daemon-reload
+
+$ sudo systemctl restart jenkins.service
+
+$ netstat -ltnp | grep 8080
+(Not all processes could be identified, non-owned process info
+ will not be shown, you would have to be root to see it all.)
+tcp6       0      0 127.0.0.1:8080          :::*                    LISTEN      -
+
+
+
+
+Устанавливаем nginx
+
+
+
+Генерируем сертификаты или копируем валидные
+
+$ mkdir /etc/nginx/tls
+
+$ sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/tls/jenkins.key -out /etc/nginx/tls/jenkins.crt -subj "/C=RU/ST= /L=Donetsk/O= /OU= /CN=jenkins.int"
+
+
+
+Вот рабочий конфиг. Методы шифрования и остальные дополнительные настройки можно добавлять.
+
+$ sudo nano /etc/nginx/conf.d/jenkins.conf
+
+upstream jenkins {
+    keepalive 32; # keepalive connections
+    server 127.0.0.1:8080; # jenkins ip and port
+}
+
+server {
+    listen 8443 ssl http2 default_server;
+    listen [::]:8443 ssl http2;
+
+    server_name _;
+
+    ssl_certificate /etc/nginx/tls/jenkins.crt;
+    ssl_certificate_key /etc/nginx/tls/jenkins.key;
+
+    access_log /var/log/nginx/jen-access.log;
+    error_log /var/log/nginx/jen-error.log;
+
+    # pass through headers from Jenkins which are considered invalid by Nginx server.
+    ignore_invalid_headers off;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_redirect     default;
+        proxy_http_version 1.1;
+
+        proxy_set_header   Host              $host:8443;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        # Clear for keepalive
+        proxy_set_header   Connection        "";
+        proxy_max_temp_file_size 0;
+
+        # this is the maximum upload size
+        client_max_body_size       100m;
+        client_body_buffer_size    128k;
+
+        proxy_connect_timeout      90;
+        proxy_send_timeout         90;
+        proxy_read_timeout         90;
+        proxy_buffering            off;
+        # Required for HTTP CLI commands in Jenkins > 2.54
+        proxy_request_buffering    off;
+    }
+}
+
+
+
+--------------------------------------
+HTTPS встроенного web сервера jenkins
+--------------------------------------
+
+Если не хотите использовать nginx или apache, то вот
+
+$ sudo systemctl edit jenkins.service
+
+[Service]
+
+Environment="JENKINS_HTTPS_PORT=8443"
+Environment="JENKINS_PORT=-1"
+
+или
+
+$ sudo mkdir /etc/systemd/system/jenkins.service.d
+
+$ sudo nano /etc/systemd/system/jenkins.service.d/override.conf
+
+
+
+$ sudo systemctl daemon-reload
+
+$ sudo systemctl restart jenkins.service
+
+$ netstat -ltnp | grep 8443
+
+tcp6       0      0 :::8443                 :::*                    LISTEN      51329/java
+
+Как вы заметили. Это намного проще.
+
+
+
+
+
+
+$ mkdir /var/lib/jenkins/.ssh/
+
+Генерируем ключи или копируем валидные
+
+$ sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /var/lib/jenkins/.ssh/jenkins.key -out /var/lib/jenkins/.ssh/jenkins.crt -subj "/C=RU/ST= /L=Donetsk/O= /OU= /CN=jenkins.int"
+
+$ sudo chown -R jenkins: /var/lib/jenkins/.ssh/
+
+
+Environment="JENKINS_OPTS=--httpsCertificate=/var/lib/jenkins/.ssh/jenkins.crt --httpsPrivateKey=/var/lib/jenkins/.ssh/jenkins.key"
+--------------------------------
