@@ -61,45 +61,6 @@ $ docker container update --restart=unless-stopped jenkins
 
 $ docker container exec -it jenkins cat /var/jenkins_home/secrets/initialAdminPassword
 
-----------------------------------------------------------------------------------------
-Дополнение:
-
-$ cd 000_*
-
-
-$ openssl ecparam -name prime256v1 -genkey -noout -out ./keys/jenkins.pem.key
-
-$ openssl req -new -key ./keys/jenkins.pem.key -out ./keys/jenkins.pem.csr -SHA256
-
-$ openssl x509 -signkey ./keys/jenkins.pem.key -in ./keys/jenkins.pem.csr -req -days 365 -out ./keys/jenkins.pem.crt -SHA256
-
-$ docker build -t bochinskii/jenkins:lts-jdk11-https .
-
-Sending build context to Docker daemon  6.144kB
-Step 1/5 : FROM jenkins/jenkins:lts-jdk11
- ---> cb535f2a7054
-Step 2/5 : COPY --chown=jenkins:jenkins ./keys/jenkins.pem.crt /var/lib/jenkins/cert
- ---> dc68a4fadc43
-Step 3/5 : COPY --chown=jenkins:jenkins ./keys/jenkins.pem.key /var/lib/jenkins/pk
- ---> 73bff9529de6
-Step 4/5 : ENV JENKINS_OPTS --httpPort=-1 --httpsPort=8083 --httpsCertificate=/var/lib/jenkins/cert --httpsPrivateKey=/var/lib/jenkins/pk
- ---> Running in 2821735f50db
-Removing intermediate container 2821735f50db
- ---> ebe9e6ff67f3
-Step 5/5 : EXPOSE 8083
- ---> Running in 454db356b2dd
-Removing intermediate container 454db356b2dd
- ---> 71370dd8b797
-Successfully built 71370dd8b797
-Successfully tagged jenkins:lts-jdk11-https
-
-
-$ docker run --name jenkins --user jenkins -d \
--v jenkins_home:/var/jenkins_home \
--p 8083:8083 -p 50000:50000 bochinskii/jenkins:lts-jdk11-https
-
------------------------------------------------------------------------------------------
-
 Вариант на хостовую машину
 
 https://www.jenkins.io/doc/book/installing/linux/

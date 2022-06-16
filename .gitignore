@@ -1,4 +1,6 @@
 secret/*
+bkps/*
+011_Jenkins_docker_nginx/keys/*
 003_Add_Agents_or_Slaves/keys/*
 002_Jobs/Job_index/.vagrant/*
 005_007_Job_github_triggers_and_parameters/.vagrant/*

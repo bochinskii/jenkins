@@ -1,0 +1,45 @@
+version: "3.9"
+
+networks:
+  jenkins:
+    driver: bridge
+
+services:
+
+  jenkins:
+    #image: jenkins/jenkins:lts-jdk11
+    build: ./docker/jenkins
+    privileged: true
+    networks:
+      - jenkins
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  agent-001:
+    #image: jenkins/ssh-agent:latest-jdk11
+    build: ./docker/agent-001
+    privileged: true
+    networks:
+      - jenkins
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - ./agent.env
+    depends_on:
+      - jenkins
+
+  nginx:
+    #image: nginx:1.22-alpine
+    build: ./docker/nginx
+    networks:
+      - jenkins
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - jenkins
+
+
+volumes:
+  jenkins_home:

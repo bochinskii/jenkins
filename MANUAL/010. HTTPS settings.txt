@@ -110,7 +110,8 @@ server {
 
     location / {
         proxy_pass http://127.0.0.1:8080;
-        proxy_redirect     default;
+        #proxy_redirect     default;
+        proxy_redirect http://127.0.0.1:8080 https://192.168.0.250
         proxy_http_version 1.1;
 
         # proxy_set_header   Host              $host:443;
@@ -139,7 +140,7 @@ server {
     listen 80 default_server;
     server_name _;
 
-    return 301 https://\$host:8080\$request_uri;
+    return 301 https://$host$request_uri;
 }
 
 
@@ -220,12 +221,3 @@ Environment="JENKINS_HTTPS_KEYSTORE_PASSWORD=<some password for keys>"
 $ sudo systemctl daemon-reload
 
 $ sudo systemctl restart jenkins.service
-
-
-
-
-
-
-
-
---------------------------------
